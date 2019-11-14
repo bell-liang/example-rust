@@ -680,8 +680,9 @@ fn main() {
     let result: Result<EventNumber, ()> = 5_i32.try_into();
     assert_eq!(result, Err(()));
 
+    #[derive(Debug)]
     struct Circle {
-        radius: i32,
+        radius: f32,
     }
     impl fmt::Display for Circle {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -689,7 +690,7 @@ fn main() {
         }
     }
 
-    let circle = Circle { radius: 6 };
+    let circle = Circle { radius: 6. };
     println!("{}", circle.to_string());
 
     let parsed: i32 = "5".parse().unwrap();
@@ -1309,14 +1310,18 @@ fn main() {
     println!("{}", contains(&2));
     println!("The len of haystack: {}", haystack.len());
 
-    fn apply<F>(f: F) where
-        F: FnOnce() {
-            f();
-        }
-    fn apply_to_3<F>(f: F) -> i32 where
-        F: Fn(i32) -> i32 {
-            f(3)
-        }
+    fn apply<F>(f: F)
+    where
+        F: FnOnce(),
+    {
+        f();
+    }
+    fn apply_to_3<F>(f: F) -> i32
+    where
+        F: Fn(i32) -> i32,
+    {
+        f(3)
+    }
     let greeting = "hello";
     let mut farewell = "goodbye".to_owned();
     let diary = || {
@@ -1328,15 +1333,17 @@ fn main() {
         mem::drop(farewell);
     };
     apply(diary);
-    
+
     let double = |x| 2 * x;
     println!("3 double: {}", apply_to_3(double));
 
     println!("以下为 闭包作为输入参数 部分！");
-    fn applynew<F>(f: F) where
-        F: Fn() {
-            f();
-        }
+    fn applynew<F>(f: F)
+    where
+        F: Fn(),
+    {
+        f();
+    }
     let x = 7;
     let print = || println!("{}", x);
     applynew(print);
@@ -1351,6 +1358,7 @@ fn main() {
     call_me(function_new);
     call_me(closure);
     println!("以下为 闭包作为返回值 部分！");
+    /*
     fn creat_fn() -> Box<Fn()> {
         let text = "Fn".to_owned();
 
@@ -1366,6 +1374,7 @@ fn main() {
 
     fn_plain();
     fn_mut();
+    */
 
     println!("Iterator::any");
     let vec1 = vec![1, 2, 3];
@@ -1388,7 +1397,10 @@ fn main() {
     let array2 = [4, 5, 6];
 
     println!("Find 2 in array1: {:?}", array1.iter().find(|&&x| x == 2));
-    println!("Find 2 in array2: {:?}", array2.into_iter().find(|&&x| x == 2));
+    println!(
+        "Find 2 in array2: {:?}",
+        array2.into_iter().find(|&&x| x == 2)
+    );
 
     fn is_odd(n: u32) -> bool {
         n % 2 == 1
@@ -1405,15 +1417,15 @@ fn main() {
     }
     println!("imperative style: {}", acc);
 
-    let sum_of_squared_odd_number: u32 = 
-        (0..).map(|n| n * n)
-                .take_while(|&n_squared| n_squared < upper)
-                .filter(|&n_squared| is_odd(n_squared))
-                .fold(0, |acc, n_squared| acc + n_squared);
+    let sum_of_squared_odd_number: u32 = (0..)
+        .map(|n| n * n)
+        .take_while(|&n_squared| n_squared < upper)
+        .filter(|&n_squared| is_odd(n_squared))
+        .fold(0, |acc, n_squared| acc + n_squared);
     println!("functional style: {}", sum_of_squared_odd_number);
 
     fn sum_odd_numbers(up_to: u32) -> u32 {
-        let  mut acc = 0;
+        let mut acc = 0;
         for i in 0..up_to {
             let addition: u32 = match i % 2 == 1 {
                 true => i,
@@ -1423,7 +1435,10 @@ fn main() {
         }
         acc
     }
-    println!("Sum of odd numbers up to 9 (excluding): {}", sum_odd_numbers(9));
+    println!(
+        "Sum of odd numbers up to 9 (excluding): {}",
+        sum_odd_numbers(9)
+    );
 
     println!("以下为 模块 部分！");
     // A module named `my_mod`
@@ -1544,7 +1559,7 @@ fn main() {
     // TODO ^ Try uncommenting this line
 
     mod my {
-    // A public struct with a public field of generic type `T`
+        // A public struct with a public field of generic type `T`
         pub struct OpenBox<T> {
             pub contents: T,
         }
@@ -1558,9 +1573,7 @@ fn main() {
         impl<T: Copy> ClosedBox<T> {
             // A public constructor method
             pub fn new(contents: T) -> ClosedBox<T> {
-                ClosedBox {
-                    contents: contents,
-                }
+                ClosedBox { contents: contents }
             }
             pub fn get(&self) -> T {
                 self.contents
@@ -1568,7 +1581,9 @@ fn main() {
         }
     }
     // Public structs with public fields can be constructed as usual
-    let open_box = my::OpenBox { contents: "public information" };
+    let open_box = my::OpenBox {
+        contents: "public information",
+    };
 
     // and their fields can be normally accessed.
     println!("The open box contains: {}", open_box.contents);
@@ -1618,40 +1633,41 @@ fn main() {
     }
 
     use_function();
-
+    #[allow(dead_code)]
     mod cool {
         pub fn function() {
             println!("called `cool::function()`");
         }
     }
 
+    #[allow(dead_code)]
     mod my_super {
         fn function() {
             println!("called `my::function()`");
         }
-        
+
         mod cool {
             pub fn function() {
                 println!("called `my::cool::function()`");
             }
         }
-        
+
         pub fn indirect_call() {
             // Let's access all the functions named `function` from this scope!
             print!("called `my::indirect_call()`, that\n> ");
-            
+
             // The `self` keyword refers to the current module scope - in this case `my`.
             // Calling `self::function()` and calling `function()` directly both give
             // the same result, because they refer to the same function.
             self::function();
             function();
-            
+
             // We can also use `self` to access another module inside `my`:
             self::cool::function();
-            
+
             // The `super` keyword refers to the parent scope (outside the `my` module).
-            super::other_function;
-            
+            //super::other_function;
+
             // This will bind to the `cool::function` in the *crate* scope.
             // In this case the crate scope is the outermost scope.
             {
@@ -1660,4 +1676,218 @@ fn main() {
             }
         }
     }
+
+    println!("以下为 cfg 部分！");
+    #[cfg(target_os = "linux")]
+    fn are_you_on_linux() {
+        println!("You are running linux!");
+    }
+    #[cfg(not(target_os = "linux"))]
+    fn are_you_on_linux() {
+        println!("You are *not* running linux!");
+    }
+
+    are_you_on_linux();
+    println!("Are you sure?");
+    if cfg!(target_os = "linux") {
+        println!("Yes. It's definitely linux!");
+    } else {
+        println!("Yes. It's definitely *not* linux!");
+    }
+
+    println!("以下为 泛型 部分！");
+    struct Val {
+        val: f64,
+    }
+    struct GenVal<T> {
+        gen_val: T,
+    }
+    impl Val {
+        fn value(&self) -> &f64 {
+            &self.val
+        }
+    }
+    impl<T> GenVal<T> {
+        fn value(&self) -> &T {
+            &self.gen_val
+        }
+    }
+
+    let x = Val { val: 3.0 };
+    let y = GenVal { gen_val: 3_i32 };
+    println!("{}, {}", x.value(), y.value());
+
+    println!("以下为 traits 部分！");
+    struct Empty;
+    struct Null;
+    trait DoubleDrop<T> {
+        fn double_drop(self, _: T);
+    }
+    impl<T, U> DoubleDrop<T> for U {
+        fn double_drop(self, _: T) {}
+    }
+    let empty = Empty;
+    let null = Null;
+    empty.double_drop(null);
+    x.double_drop(y);
+
+    println!("以下为 trait限定 部分！");
+    trait HasArea {
+        fn area(&self) -> f32;
+    }
+    impl HasArea for Circle {
+        fn area(&self) -> f32 {
+            self.radius * self.radius * 3.1415926
+        }
+    }
+    use std::fmt::Debug;
+    fn print_debug<T: Debug>(t: &T) {
+        println!("{:?}", t)
+    }
+    fn area<T: HasArea>(t: &T) -> f32 {
+        t.area()
+    }
+    let circle = Circle { radius: 3. };
+    print_debug(&circle);
+    println!("Area: {}", area(&circle));
+
+    fn compare_prints<T: Debug + Display>(t: &T) {
+        println!("Debug: `{:?}`", t);
+        println!("Display: `{}`", t);
+    }
+    
+    fn compare_types<T: Debug, U: Debug>(t: &T, u: &U) {
+        println!("t: `{:?}`", t);
+        println!("u: `{:?}`", u);
+    }
+    let string = "words";
+    let array = [1, 2, 3];
+    let vec = vec![1, 2, 3];
+
+    compare_prints(&string);
+    // compare_prints(&array);
+    // TODO ^ Try uncommenting this.
+
+    compare_types(&array, &vec);
+
+    trait PrintInOption {
+        fn print_in_option(self);
+    }
+    
+    // Because we would otherwise have to express this as `T: Debug` or 
+    // use another method of indirect approach, this requires a `where` clause:
+    impl<T> PrintInOption for T where
+        Option<T>: Debug {
+        // We want `Option<T>: Debug` as our bound because that is what's
+        // being printed. Doing otherwise would be using the wrong bound.
+        fn print_in_option(self) {
+            println!("{:?}", Some(self));
+        }
+    }
+    vec.print_in_option();
+
+    println!("以下为 类型限定 部分！");
+    struct Years(i64);
+
+    struct Days(i64);
+
+    impl Years {
+        pub fn to_days(&self) -> Days {
+            Days(self.0 * 365)
+        }
+    }
+
+
+    impl Days {
+        /// truncates partial years
+        pub fn to_years(&self) -> Years {
+            Years(self.0 / 365)
+        }
+    }
+
+    fn old_enough(age: &Years) -> bool {
+        age.0 >= 18
+    }
+    let age = Years(5);
+    let age_days = age.to_days();
+    println!("Old enough {}", old_enough(&age));
+    println!("Old enough {}", old_enough(&age_days.to_years()));
+
+    println!("以下为 关联类型 部分！");
+    struct Container(i32, i32);
+
+    // A trait which checks if 2 items are stored inside of container.
+    // Also retrieves first or last value.
+    /*
+    trait Contains<A, B> {
+        fn contains(&self, _: &A, _: &B) -> bool; // Explicitly requires `A` and `B`.
+        fn first(&self) -> i32; // Doesn't explicitly require `A` or `B`.
+        fn last(&self) -> i32;  // Doesn't explicitly require `A` or `B`.
+    }
+
+    impl Contains<i32, i32> for Container {
+        // True if the numbers stored are equal.
+        fn contains(&self, number_1: &i32, number_2: &i32) -> bool {
+            (&self.0 == number_1) && (&self.1 == number_2)
+        }
+
+        // Grab the first number.
+        fn first(&self) -> i32 { self.0 }
+
+        // Grab the last number.
+        fn last(&self) -> i32 { self.1 }
+    }
+
+    // `C` contains `A` and `B`. In light of that, having to express `A` and
+    // `B` again is a nuisance.
+    fn difference<A, B, C>(container: &C) -> i32 where
+        C: Contains<A, B> {
+        container.last() - container.first()
+    }
+    */
+    // A trait which checks if 2 items are stored inside of container.
+    // Also retrieves first or last value.
+    trait Contains {
+        // Define generic types here which methods will be able to utilize.
+        type A;
+        type B;
+
+        fn contains(&self, _: &Self::A, _: &Self::B) -> bool;
+        fn first(&self) -> i32;
+        fn last(&self) -> i32;
+    }
+
+    impl Contains for Container {
+        // Specify what types `A` and `B` are. If the `input` type
+        // is `Container(i32, i32)`, the `output` types are determined
+        // as `i32` and `i32`.
+        type A = i32;
+        type B = i32;
+
+        // `&Self::A` and `&Self::B` are also valid here.
+        fn contains(&self, number_1: &i32, number_2: &i32) -> bool {
+            (&self.0 == number_1) && (&self.1 == number_2)
+        }
+        // Grab the first number.
+        fn first(&self) -> i32 { self.0 }
+
+        // Grab the last number.
+        fn last(&self) -> i32 { self.1 }
+    }
+
+    fn difference<C: Contains>(container: &C) -> i32 {
+        container.last() - container.first()
+    }
+    let number_1 = 3;
+    let number_2 = 10;
+
+    let container = Container(number_1, number_2);
+
+    println!("Does container contain {} and {}: {}",
+        &number_1, &number_2,
+        container.contains(&number_1, &number_2));
+    println!("First number: {}", container.first());
+    println!("Last number: {}", container.last());
+
+    println!("The difference is: {}", difference(&container));
 }
