@@ -1890,4 +1890,54 @@ fn main() {
     println!("Last number: {}", container.last());
 
     println!("The difference is: {}", difference(&container));
+
+    println!("以下为 PhantoData标签 部分！");
+    use std::marker::PhantomData;
+    #[derive(PartialEq)]
+    struct PhantomTuple<A, B>(A, PhantomData<B>);
+
+    #[derive(PartialEq)]
+    struct PhantomStruct<A, B> { first: A, phantom: PhantomData<B> };
+
+    let _tuple1: PhantomTuple<char, f32> = PhantomTuple('Q', PhantomData);
+    let _tuple2: PhantomTuple<char, f64> = PhantomTuple('Q', PhantomData);
+
+    let _struct1: PhantomStruct<char, f32> = PhantomStruct {
+        first: 'Q',
+        phantom: PhantomData,
+    };
+    let _struct2: PhantomStruct<char, f64> = PhantomStruct {
+        first: 'Q',
+        phantom: PhantomData,
+    };
+
+    use std::ops::Add;
+    #[derive(Debug, Clone, Copy)]
+    struct Cm {};
+    #[derive(Debug, Clone, Copy)]
+    struct Mm {};
+
+    #[derive(Debug, Clone, Copy)]
+    struct Length<Unit>(f64, PhantomData<Unit>);
+
+    impl<Unit> Add for Length<Unit> {
+        type Output = Length<Unit>;
+
+        fn add(self, rhs: Length<Unit>) -> Length<Unit> {
+            Length(self.0 + rhs.0 , PhantomData)
+        }
+    }
+    let one_cm: Length<Cm> = Length(12., PhantomData);
+    let one_mm: Length<Mm> = Length(1000., PhantomData);
+
+    let two_cm = one_cm + one_cm;
+    let two_mm = one_mm + one_mm;
+
+    println!("one cm + one cm = {:?}", two_cm.0);
+    println!("one mm + one mm = {:?}", two_mm.0);
+
+    //let one_feter = one_cm + one_mm;
+
+    println!("以下为 作用域 部分！");
+    
 }
