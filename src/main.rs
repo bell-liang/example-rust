@@ -2513,4 +2513,14 @@ fn main() {
     test!(1_i32 + 1 == 2_i32; and 2_i32 * 2 == 4_i32);
     test!(true; or false);
 
+    macro_rules! find_min {
+        ($x: expr) => ($x);
+        ($x: expr, $($y: expr),+) => {
+            std::cmp::min($x, find_min!($($y),+))
+        }
+    }
+    println!("{}", find_min!(1_u32));
+    println!("{}", find_min!(1_u32 + 2, 2_u32));
+    println!("{}", find_min!(5_u32, 2_u32 * 3, 4_u32));
+
 }
