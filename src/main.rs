@@ -2523,4 +2523,62 @@ fn main() {
     println!("{}", find_min!(1_u32 + 2, 2_u32));
     println!("{}", find_min!(5_u32, 2_u32 * 3, 4_u32));
 
+    macro_rules! calculate {
+        (eval $e: expr) => {
+            let val: usize = $e;
+            println!("{} = {}", stringify!{$e}, val);
+        };
+        (eval $e: expr, $(eval $es: expr),+) => {
+            calculate! { eval $e }
+            calculate! { $(eval $es),+ }
+        }
+    }
+    calculate! {
+        eval 1 + 2,
+        eval 3 + 4,
+        eval (2 * 3) + 1
+    }
+    println!("以下为 错误处理 部分！");
+    fn give_princess(gift: &str) {
+        if gift == "snake" { panic!("AAAaaaaa!!!!"); }
+        println!("I love {}s!!!!!", gift);
+    }
+    give_princess("teddy bear");
+    //give_princess("snake");
+
+    fn give_commoner(gift: Option<&str>) {
+        match gift {
+            Some("snake") => println!("Yuck! I'm putting this snake back in the forest."),
+            Some(inner) => println!("{}? How nice.", inner),
+            None => println!("No gife? Oh well."),
+        }
+    }
+    fn give_princess_new(gift: Option<&str>) {
+        let inside = gift.unwrap();
+        if inside == "snake" { panic!("AAAaaaaa!!!!"); }
+        
+        println!("I love {}s!!!!", inside);
+    }
+    let food = Some("cabbage");
+    let snake = Some("snake");
+    let void = None;
+
+    give_commoner(food);
+    give_commoner(snake);
+    give_commoner(void);
+
+    let bird = Some("robin");
+    //let nothing = None;
+
+    give_princess_new(bird);
+    //give_princess_new(nothing);
+
+    fn next_birthday(current_age: Option<u8>) -> Option<String> {
+        let next_age: u8 = current_age?;
+        Some(format!("Next year I will be {}", next_age))
+    }
+    let age0 = Some(19);
+    let age1 = None;
+    println!("{:?}", next_birthday(age0));
+    println!("{:?}", next_birthday(age1));
 }
