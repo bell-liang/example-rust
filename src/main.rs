@@ -55,13 +55,13 @@ fn main() {
     println!("{}\n", Structure(2));
 
     #[derive(Debug)]
-    struct Person<'a> {
+    struct PersonNew<'a> {
         name: &'a str,
         age: u8,
     }
     let name = "Peter";
     let age = 27;
-    let peter = Person { name, age };
+    let peter = PersonNew { name, age };
     // Pretty print
     println!("{:#?}", peter);
     println!("{:?}\n", peter);
@@ -378,7 +378,7 @@ fn main() {
     // Create struct with field init shorthand
     let name = "Peter";
     let age = 27;
-    let peter = Person { name, age };
+    let peter = PersonNew { name, age };
 
     // Print debug struct
     println!("{:?}", peter);
@@ -2581,4 +2581,116 @@ fn main() {
     let age1 = None;
     println!("{:?}", next_birthday(age0));
     println!("{:?}", next_birthday(age1));
+
+    struct Person {
+        job: Option<Job>,
+    }
+    #[derive(Clone, Copy)]
+    struct Job {
+        phone_number: Option<PhoneNumber>,
+    }
+    #[allow(dead_code)]
+    #[derive(Clone, Copy)]
+    struct PhoneNumber {
+        area_code: Option<u8>,
+        number: u32,
+    }
+    impl Person {
+        fn work_phone_area_code(&self) -> Option<u8> {
+            self.job?.phone_number?.area_code
+        }
+    }
+    let p = Person {
+        job: Some(Job {
+            phone_number: Some(PhoneNumber {
+                area_code: Some(61),
+                number: 439222222,
+            }),
+        }),
+    };
+    assert_eq!(p.work_phone_area_code(), Some(61));
+
+    #[derive(Debug)] enum Food { Apple, Carrot, Potato };
+    #[derive(Debug)] struct Peeled(Food);
+    #[derive(Debug)] struct Chopped(Food);
+    #[derive(Debug)] struct Cooked(Food);
+
+    fn peel(food: Option<Food>) -> Option<Peeled> {
+        match food {
+            Some(food) => Some(Peeled(food)),
+            None => None,
+        }
+    }
+    fn chop(peeled: Option<Peeled>) -> Option<Chopped> {
+        match peeled {
+            Some(Peeled(food)) => Some(Chopped(food)),
+            None => None,
+        }
+    }
+    fn cook(chopped: Option<Chopped>) -> Option<Cooked> {
+        chopped.map(|Chopped(food)| Cooked(food))
+    }
+    fn process(food: Option<Food>) -> Option<Cooked> {
+        food.map(|f| Peeled(f))
+            .map(|Peeled(f)| Chopped(f))
+            .map(|Chopped(f)| Cooked(f))
+    }
+    fn eat(food: Option<Cooked>) {
+        match food {
+            Some(food) => println!("Mmm, I love {:?}", food),
+            None => println!("Oh no! It wasn't edible."),
+        }
+    }
+
+    let apple = Some(Food::Apple);
+    let carrot = Some(Food::Carrot);
+    let potato = Some(Food::Potato);
+
+    let cooked_apple = cook(chop(peel(apple)));
+    let cooked_carrot = cook(chop(peel(carrot)));
+    let cooked_potato = process(potato);
+
+    eat(cooked_apple);
+    eat(cooked_carrot);
+    eat(cooked_potato);
+
+    #[derive(Debug)] enum FoodNew { CordonBleu, Steak, Sushi };
+    #[derive(Debug)] enum Day { Monday, Tuesday, Wednesday };
+    fn have_ingredients(food: FoodNew) -> Option<FoodNew> {
+        match food {
+            FoodNew::Sushi => None,
+            _ => Some(food),
+        }
+    }
+    fn have_recipe(food: FoodNew) -> Option<FoodNew> {
+        match food {
+            FoodNew::CordonBleu => None,
+            _ => Some(food),
+        }
+    }
+    #[allow(dead_code)]
+    fn cookable_v1(food: FoodNew) -> Option<FoodNew> {
+        match have_recipe(food) {
+            None => None,
+            Some(food) => match have_ingredients(food) {
+                None => None,
+                Some(food) => Some(food),
+            }
+        }
+    }
+    fn cookable_v2(food: FoodNew) -> Option<FoodNew> {
+        have_recipe(food).and_then(have_ingredients)
+    }
+    fn eat_new(food: FoodNew, day: Day) {
+        match cookable_v2(food) {
+            Some(food) => println!("Yay! On {:?} we get to eat {:?}.", day, food),
+            None => println!("Oh no. We dont't get to eat on {:?}?", day),
+        }
+    }
+
+    let (cordon_bleu, steak, sushi) = (FoodNew::CordonBleu, FoodNew::Steak, FoodNew::Sushi);
+    eat_new(cordon_bleu, Day::Monday);
+    eat_new(steak, Day::Tuesday);
+    eat_new(sushi, Day::Wednesday);
+
 }
