@@ -2693,4 +2693,139 @@ fn main() {
     eat_new(steak, Day::Tuesday);
     eat_new(sushi, Day::Wednesday);
 
+    println!("以下为 Rusult 部分！");
+    fn multiply_new(first_number_str: &str, second_number_str: &str) -> i32 {
+        let first_number = first_number_str.parse::<i32>().unwrap();
+        let second_number = second_number_str.parse::<i32>().unwrap();
+        first_number * second_number
+    }
+
+    let twenty = multiply_new("10", "2");
+    println!("double is {}", twenty);
+    //let tt = multiply_new("t", "2");
+    //println!("double is {}", tt);
+
+    use std::num::ParseIntError;
+    fn multiply_second(first_number_str: &str, second_number_str: &str) -> Result<i32, ParseIntError> {
+        match first_number_str.parse::<i32>() {
+            Ok(first_number) => {
+                match second_number_str.parse::<i32>() {
+                    Ok(second_number) => {
+                        Ok(first_number * second_number)
+                    },
+                    Err(e) => Err(e),
+                }
+            },
+            Err(e) => Err(e),
+        }
+    }
+    fn print_new(result: Result<i32, ParseIntError>) {
+        match result {
+            Ok(n) => println!("n is {}", n),
+            Err(e) => println!("Error: {}", e),
+        }
+    }
+    let twenty = multiply_second("10", "2");
+    print_new(twenty);
+    let tt = multiply_second("t", "2");
+    print_new(tt);
+
+    fn multiply_third(first_number_str: &str, second_number_str: &str) -> Result<i32, ParseIntError> {
+        first_number_str.parse::<i32>().and_then(|first_number| {
+            second_number_str.parse::<i32>().map(|second_number| first_number * second_number)
+        })
+    }
+    let twenty = multiply_third("10", "2");
+    print_new(twenty);
+    let tt = multiply_third("t", "2");
+    print_new(tt);
+
+    type AliasedResult<T> = Result<T, ParseIntError>;
+    fn multiply_fourth(first_number_str: &str, second_number_str: &str) -> AliasedResult<i32> {
+        first_number_str.parse::<i32>().and_then(|first_number| {
+            second_number_str.parse::<i32>().map(|second_number| first_number * second_number)
+        })
+    }
+    print_new(multiply_third("10", "2"));
+    print_new(multiply_fourth("t", "2"));
+
+    fn multiply_fifth(first_number_str: &str, second_number_str: &str) -> AliasedResult<i32> {
+        let first_number = match first_number_str.parse::<i32>() {
+            Ok(first_number) => first_number,
+            Err(e) => return Err(e),
+        };
+        let second_number = match second_number_str.parse::<i32>() {
+            Ok(second_number) => second_number,
+            Err(e) => return Err(e),
+        };
+        Ok(first_number * second_number)
+    }
+    print_new(multiply_fifth("10", "2"));
+    print_new(multiply_fifth("t", "2"));
+
+    fn multiply_sixth(first_number_str: &str, second_number_str: &str) -> AliasedResult<i32> {
+        let first_number = first_number_str.parse::<i32>()?;
+        let second_number = second_number_str.parse::<i32>()?;
+        Ok(first_number * second_number)
+    }
+    print_new(multiply_sixth("10", "2"));
+    print_new(multiply_sixth("t", "2"));
+
+    /*
+    fn multiply_seventh(first_number_str: &str, second_number_str: &str) -> AliasedResult<i32> {
+        let first_number = try!(first_number_str.parse::<i32>());
+        let second_number = try(!second_number_str.parse::<i32>());
+        Ok(first_number * second_number)
+    }
+    */
+
+    fn double_first(vec: Vec<&str>) -> i32 {
+        let first = vec.first().unwrap();
+        2 * first.parse::<i32>().unwrap()
+    }
+    let numbers = vec!["42", "93", "18"];
+    //let empty = vec![];
+    //let strings = vec!["tofu", "93", "18"];
+    println!("The first doubled is {}", double_first(numbers));
+    //println!("The first doubles is {}", double_first(empty));
+    //println!("The first doubles is {}", double_first(strings));
+
+    fn double_first_2(vec: Vec<&str>) -> Option<AliasedResult<i32>> {
+        vec.first().map(|first| {
+            first.parse::<i32>().map(|n| 2 * n)
+        })
+    }
+    let numbers = vec!["42", "93", "18"];
+    println!("The first doubles is {:?}", double_first_2(numbers));
+
+    fn double_first_3(vec: Vec<&str>) -> AliasedResult<Option<i32>> {
+        let opt = vec.first().map(|first| {
+            first.parse::<i32>().map(|n| 2 * n)
+        });
+        
+        let opt = opt.map_or(Ok(None), |r| r.map(Some))?;
+        Ok(opt)
+    }
+    let numbers = vec!["42", "93", "18"];
+    let empty = vec![];
+    let strings = vec!["tofu", "93", "18"];
+    println!("The first doubled is {:?}", double_first_3(numbers));
+    println!("The first doubles is {:?}", double_first_3(empty));
+    println!("The first doubles is {:?}", double_first_3(strings));
+
+    use std::error;
+    type Result<T> = std::result::Result<T, DoubleError>;
+    #[derive(Debug, Clone)]
+    struct DoubleError;
+    impl fmt::Display  for DoubleError {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            write!(f, "invalid first item to double")
+        }
+    }
+    impl error::Error for DoubleError {
+        fn source(&self) -> Option<&(dyn error::Error + 'static)> {
+            None
+        }
+    }
+
 }
