@@ -2813,7 +2813,7 @@ fn main() {
     println!("The first doubles is {:?}", double_first_3(empty));
     println!("The first doubles is {:?}", double_first_3(strings));
 
-    use std::error;
+    /*
     type Result<T> = std::result::Result<T, DoubleError>;
     #[derive(Debug, Clone)]
     struct DoubleError;
@@ -2827,5 +2827,6 @@ fn main() {
             None
         }
     }
+    */
 
 }
