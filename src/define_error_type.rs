@@ -2,7 +2,7 @@ use std::error;
 use std::num::ParseIntError;
 use std::fmt;
 
-type Result<T> = std::result::Result<T, DoubleError>;
+type ResultDouble<T> = std::result::Result<T, DoubleError>;
 #[derive(Debug, Clone)]
 struct DoubleError;
 
@@ -18,7 +18,7 @@ impl error::Error for DoubleError {
     }
 }
 
-fn double_first(vec: Vec<&str>) -> Result<i32> {
+fn double_first(vec: Vec<&str>) -> ResultDouble<i32> {
     vec.first()
         .ok_or(DoubleError)
         .and_then(|s| {
@@ -28,7 +28,7 @@ fn double_first(vec: Vec<&str>) -> Result<i32> {
         })
 }
 
-fn print(result: Result<i32>) {
+fn print(result: ResultDouble<i32>) {
     match result {
         Ok(n) => println!("The first doubled is {}", n),
         Err(e) => println!("Error: {}", e),
@@ -151,4 +151,37 @@ fn main() {
     print_3(double_first_4(numbers));
     print_3(double_first_4(empty));
     print_3(double_first_4(strings));
+
+    let strings = vec!["tofu", "93", "18"];
+    let numbers: Vec<_> = strings
+        .into_iter()
+        .map(|s| s.parse::<i32>())
+        .filter_map(Result::ok)
+        .collect();
+    println!("Results: {:?}", numbers);
+
+    let strings = vec!["tofu", "93", "18"];
+    let numbers: Result<Vec<_>, _> = strings
+        .into_iter()
+        .map(|s| s.parse::<i32>())
+        .collect();
+    println!("Results: {:?}", numbers);
+
+    let strings = vec!["tofu", "93", "18"];
+    let (numbers, errors): (Vec<_>, Vec<_>) = strings
+        .into_iter()
+        .map(|s| s.parse::<i32>())
+        .partition(Result::is_ok);
+    println!("Numbers: {:?}", numbers);
+    println!("Errors: {:?}", errors);
+
+    let strings = vec!["tofu", "93", "18"];
+    let (numbers, errors): (Vec<_>, Vec<_>) = strings
+        .into_iter()
+        .map(|s| s.parse::<i32>())
+        .partition(Result::is_ok);
+    let numbers: Vec<_> = numbers.into_iter().map(Result::unwrap).collect();
+    let errors: Vec<_> = errors.into_iter().map(Result::unwrap_err).collect();
+    println!("Numbers: {:?}", numbers);
+    println!("Errors: {:?}", errors);
 }
