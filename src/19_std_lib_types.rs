@@ -1,5 +1,7 @@
 use std::mem;
 use std::str;
+use std::collections::{HashMap, HashSet};
+use std::rc::Rc;
 
 #[allow(dead_code)]
 #[derive(Debug, Clone, Copy)]
@@ -97,6 +99,16 @@ fn op(x: f64, y: f64) -> f64 {
                 Ok(sqrt) => sqrt,
             },
         },
+    }
+}
+
+fn call(number: &str) -> &str {
+    match number {
+        "798-1364" => "We're sorry, the call cannot be completed as dialed.
+            Please hang up and try again.",
+        "645-7689" => "Hello, this is Mr. Awesome's Pizza. My name is Fred.
+            What can I get for you today?",
+        _ => "Hi! Who is this again?"
     }
 }
 
@@ -336,4 +348,149 @@ fn main() {
     println!("{}", op(20.0, 10.0));
     println!("以下为 ？ 部分！");
     checked::op(100.0, 10.0);
+    println!("以下为 HashMap 部分！");
+    let mut contacts = HashMap::new();
+
+    contacts.insert("Daniel", "798-1364");
+    contacts.insert("Ashley", "645-7689");
+    contacts.insert("Katie", "435-8291");
+    contacts.insert("Robert", "956-1745");
+
+    // Takes a reference and returns Option<&V>
+    match contacts.get(&"Daniel") {
+        Some(&number) => println!("Calling Daniel: {}", call(number)),
+        _ => println!("Don't have Daniel's number."),
+    }
+
+    // `HashMap::insert()` returns `None`
+    // if the inserted value is new, `Some(value)` otherwise
+    contacts.insert("Daniel", "164-6743");
+
+    match contacts.get(&"Ashley") {
+        Some(&number) => println!("Calling Ashley: {}", call(number)),
+        _ => println!("Don't have Ashley's number."),
+    }
+
+    contacts.remove(&"Ashley");
+
+    // `HashMap::iter()` returns an iterator that yields
+    // (&'a key, &'a value) pairs in arbitrary order.
+    for (contact, &number) in contacts.iter() {
+        println!("Calling {}: {}", contact, call(number));
+    }
+    #[derive(PartialEq, Eq, Hash)]
+    struct Account<'a>{
+        username: &'a str,
+        password: &'a str,
+    }
+
+    struct AccountInfo<'a>{
+        name: &'a str,
+        email: &'a str,
+    }
+
+    type Accounts<'a> = HashMap<Account<'a>, AccountInfo<'a>>;
+    fn try_logon<'a>(accounts: &Accounts<'a>,
+                     username: &'a str, password: &'a str){
+        println!("Username: {}", username);
+        println!("Password: {}", password);
+        println!("Attempting logon...");
+
+        let logon = Account {
+            username,
+            password,
+        };
+
+        match accounts.get(&logon) {
+            Some(account_info) => {
+                println!("Successful logon!");
+                println!("Name: {}", account_info.name);
+                println!("Email: {}", account_info.email);
+            },
+            _ => println!("Login failed!"),
+        }
+    }
+    let mut accounts: Accounts = HashMap::new();
+
+    let account = Account {
+        username: "j.everyman",
+        password: "password123",
+    };
+
+    let account_info = AccountInfo {
+        name: "John Everyman",
+        email: "j.everyman@email.com",
+    };
+
+    accounts.insert(account, account_info);
+
+    try_logon(&accounts, "j.everyman", "psasword123");
+
+    try_logon(&accounts, "j.everyman", "password123");
+    println!("以下为 HashSet 部分！");
+    let mut a: HashSet<i32> = vec![1i32, 2, 3].into_iter().collect();
+    let mut b: HashSet<i32> = vec![2i32, 3, 4].into_iter().collect();
+
+    assert!(a.insert(4));
+    assert!(a.contains(&4));
+
+    // `HashSet::insert()` returns false if
+    // there was a value already present.
+    // assert!(b.insert(4), "Value 4 is already in set B!");
+    // FIXME ^ Comment out this line
+
+    b.insert(5);
+
+    // If a collection's element type implements `Debug`,
+    // then the collection implements `Debug`.
+    // It usually prints its elements in the format `[elem1, elem2, ...]`
+    println!("A: {:?}", a);
+    println!("B: {:?}", b);
+
+    // Print [1, 2, 3, 4, 5] in arbitrary order
+    println!("Union: {:?}", a.union(&b).collect::<Vec<&i32>>());
+
+    // This should print [1]
+    println!("Difference: {:?}", a.difference(&b).collect::<Vec<&i32>>());
+
+    // Print [2, 3, 4] in arbitrary order.
+    println!("Intersection: {:?}", a.intersection(&b).collect::<Vec<&i32>>());
+
+    // Print [1, 5]
+    println!("Symmetric Difference: {:?}",
+             a.symmetric_difference(&b).collect::<Vec<&i32>>());
+    println!("以下为 Rc 部分！");
+    let rc_examples = "Rc examples".to_string();
+    {
+        println!("--- rc_a is created ---");
+
+        let rc_a: Rc<String> = Rc::new(rc_examples);
+        println!("Reference Count of rc_a: {}", Rc::strong_count(&rc_a));
+
+        {
+            println!("--- rc_a is cloned to rc_b ---");
+
+            let rc_b: Rc<String> = Rc::clone(&rc_a);
+            println!("Reference Count of rc_b: {}", Rc::strong_count(&rc_b));
+            println!("Reference Count of rc_a: {}", Rc::strong_count(&rc_a));
+
+            // Two `Rc`s are equal if their inner values are equal
+            println!("rc_a and rc_b are equal: {}", rc_a.eq(&rc_b));
+
+            // We can use methods of a value directly
+            println!("Length of the value inside rc_a: {}", rc_a.len());
+            println!("Value of rc_b: {}", rc_b);
+
+            println!("--- rc_b is dropped out of scope ---");
+        }
+
+        println!("Reference Count of rc_a: {}", Rc::strong_count(&rc_a));
+
+        println!("--- rc_a is dropped out of scope ---");
+    }
+
+    // Error! `rc_examples` already moved into `rc_a`
+    // And when `rc_a` is dropped, `rc_examples` is dropped together
+    // println!("rc_examples: {}", rc_examples);
+    // TODO ^ Try uncommenting this line
 }
