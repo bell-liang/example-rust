@@ -2,8 +2,12 @@ use std::thread;
 use std::sync::mpsc::{self, Sender, Receiver};
 use std::path::Path;
 use std::error::Error;
-use std::fs::File;
+use std::fs::{self, File, OpenOptions};
 use std::io::{self, BufRead, prelude::*};
+use std::process::{Command, Stdio};
+use std::os::unix;
+use std::env;
+use std::fmt;
 
 static NTHREADS: i32 = 10;
 static LOREM_IPSUM: &str =
@@ -131,5 +135,194 @@ fn main() {
     where P: AsRef<Path>, {
         let file = File::open(file_name)?;
         Ok(io::BufReader::new(file).lines())
+    }
+    println!("以下为 Child processes 部分！");
+    let output = Command::new("rustc")
+        .arg("--version")
+        .output().unwrap_or_else(|e| {
+            panic!("failed to execute process: {}", e)
+    });
+    if output.status.success() {
+        let s = String::from_utf8_lossy(&output.stdout);
+        println!("rustc succeeded and stdout was : \n{}", s);
+    } else {
+        let s = String::from_utf8_lossy(&output.stderr);
+        println!("rustc failed and stderr was :\n{}", s);
+    }
+    println!("以下为 Pipes 部分！");
+    static PANGRAM: &'static str =
+        "the quick brown fox jumped over the lazy dog\n";
+    let process = match Command::new("wc")
+                                                        .stdin(Stdio::piped())
+                                                        .stdout(Stdio::piped())
+                                                        .spawn() {
+        Err(why) => panic!("couldn't spawn wc: {}", why.description()),
+        Ok(process) =>process,
+    };
+    match process.stdin.unwrap().write_all(PANGRAM.as_bytes()) {
+        Err(why) => panic!("couldn't write to wc stdin: {}", why.description()),
+        Ok(_) => println!("sent pangram to wc"),
+    }
+    let mut s = String::new();
+    match process.stdout.unwrap().read_to_string(&mut s) {
+        Err(why) => panic!("couldn't read wc stdout: {}", why.description()),
+        Ok(_) => println!("wc responded with: \n{}", s),
+    }
+    println!("以下为 wait 部分！");
+    let mut child = Command::new("sleep").arg("1").spawn().unwrap();
+    let _result = child.wait().unwrap();
+    println!("reached end of main");
+    println!("以下为 Filesystem Operations 部分！");
+    fn cat(path: &Path) -> io::Result<String> {
+        let mut f = File::open(path)?;
+        let mut s = String::new();
+        match f.read_to_string(&mut s) {
+            Ok(_) => Ok(s),
+            Err(e) => Err(e),
+        }
+    }
+    fn echo(s: &str, path: &Path) -> io::Result<()> {
+        let mut f = File::create(path)?;
+        f.write_all(s.as_bytes())
+    }
+    fn touch(path: &Path) -> io::Result<()> {
+        match OpenOptions::new().create(true).write(true).open(path) {
+            Ok(_) => Ok(()),
+            Err(e) => Err(e),
+        }
+    }
+    println!("'mkdir a'");
+    match fs::create_dir("a") {
+        Err(why) => println!("! {:?}", why.kind()),
+        Ok(_) => {},
+    }
+    println!("'echo hello > a/b.txt'");
+    echo("hello", &Path::new("a/b.txt")).unwrap_or_else(|why| {
+        println!("! {:?}", why.kind());
+    });
+    println!("'mkdir -p a/c/d'");
+    fs::create_dir_all("a/c/d").unwrap_or_else(|why| {
+        println!("! {:?}", why.kind());
+    });
+    println!("'touch a/c/e.txt'");
+    touch(&Path::new("a/c/e.txt")).unwrap_or_else(|why| {
+        println!("! {:?}", why.kind());
+    });
+    println!("'ln -s ../b.txt a/c/b.txt'");
+    if cfg!(target_family = "unix") {
+        unix::fs::symlink("../b.txt", "a/c/b.txt").unwrap_or_else(|why| {
+            println!("! {:?}", why.kind());
+        });
+    }
+    println!("'cat a/c/b.txt'");
+    match cat(&Path::new("a/c/b.txt")) {
+        Err(why) => println!("! {:?}", why.kind()),
+        Ok(s) => println!("> {}", s),
+    }
+    println!("'ls a'");
+    match fs::read_dir("a") {
+        Err(why) => println!("! {:?}", why.kind()),
+        Ok(paths) => for path in paths {
+            println!("> {:?}", path.unwrap().path());
+        },
+    }
+    println!("'rm a/c/e.txt'");
+    fs::remove_file("a/c/e.txt").unwrap_or_else(|why| {
+        println!("! {:?}", why.kind());
+    });
+    println!("'rmdir a/c/d'");
+    fs::remove_dir("a/c/d").unwrap_or_else(|why| {
+        println!("! {:?}", why.kind());
+    });
+    println!("以下为 Program arguments 部分！");
+    let args: Vec<String> = env::args().collect();
+    println!("My path is {}", args[0]);
+    println!("I got {:?} arguments: {:?}.", args.len()-1, &args[1..]);
+    println!("以下为 Argument parsing 部分！");
+    fn increase(number: i32) {
+        println!("{}", number + 1);
+    }
+    fn decrease(number: i32) {
+        println!("{}", number - 1);
+    }
+    fn help() {
+        println!("usage:
+match_args <string>
+    Check whether given string is the answer.
+match_args {{increase|decrease}} <integer>
+    Increase or decrease given integer by one.");
+    }
+    let args: Vec<String> = env::args().collect();
+
+    match args.len() {
+        // no arguments passed
+        1 => {
+            println!("My name is 'match_args'. Try passing some arguments!");
+        },
+        // one argument passed
+        2 => {
+            match args[1].parse() {
+                Ok(42) => println!("This is the answer!"),
+                _ => println!("This is not the answer."),
+            }
+        },
+        // one command and one argument passed
+        3 => {
+            let cmd = &args[1];
+            let num = &args[2];
+            // parse the number
+            let number: i32 = match num.parse() {
+                Ok(n) => {
+                    n
+                },
+                Err(_) => {
+                    eprintln!("error: second argument not an integer");
+                    help();
+                    return;
+                },
+            };
+            // parse the command
+            match &cmd[..] {
+                "increase" => increase(number),
+                "decrease" => decrease(number),
+                _ => {
+                    eprintln!("error: invalid command");
+                    help();
+                },
+            }
+        },
+        // all the other cases
+        _ => {
+            // show a help message
+            help();
+        }
+    }
+    println!("以下为 Foreign Function Interface 部分！");
+    #[link(name = "m")]
+    extern {
+        fn csqrtf(z: Complex) -> Complex;
+        fn ccosf(z: Complex) -> Complex;
+    }
+    fn cos(z: Complex) -> Complex {
+        unsafe { ccosf(z) }
+    }
+    let z = Complex { re: -1., im: 0. };
+    let z_sqrt = unsafe { csqrtf(z) };
+    println!("the square root of {:?} is {:?}", z, z_sqrt);
+    println!("cos({:?}) = {:?}", z, cos(z));
+    #[repr(C)]
+    #[derive(Clone, Copy)]
+    struct Complex {
+        re: f32,
+        im: f32,
+    }
+    impl fmt::Debug for Complex {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            if self.im < 0. {
+                write!(f, "{}-{}i", self.re, -self.im)
+            } else {
+                write!(f, "{}+{}i", self.re, self.im)
+            }
+        }
     }
 }
